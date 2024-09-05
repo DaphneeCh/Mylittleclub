@@ -34,7 +34,7 @@ class Authentification extends BaseController
             $utilisateurModel = new UtilisateurModel();
             $utilisateurModel->insert($donnees);
             echo("insert avec sucess");
-            // return redirect()->to(base_url('connexion'));
+            // return redirect()->to(site_url('connexion'));
         }
 
 

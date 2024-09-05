@@ -41,9 +41,11 @@ class publication extends BaseController{
         
         $text=$this->request->getPost('publication');
         $id_gr=$this->request->getPost('id_groupe');
+        $currentDateTime = date('Y-m-d H:i:s');
         $data=['text'=>$text,
             'id_user'=>$session->get('id'),
-            'id_gr'=>$id_gr
+            'id_gr'=>$id_gr,
+            'publie_at'=>$currentDateTime
     ];
         
         $sv->save($data);
@@ -53,16 +55,17 @@ class publication extends BaseController{
         $data=[];
         $publicationModel = new Publication_Model();
         $publication = $publicationModel->find($id_gr);// Récupérer une publication  depuis la base de données
-        $nom_utilisateur = $publicationModel->select('Utilisateur.nom_user, Publication.text')
+        $nom_utilisateur = $publicationModel->select('Utilisateur.nom_user, Publication.text, Publication.publie_at')
                                      ->join('Utilisateur', 'Utilisateur.id = Publication.id_user')
                                      ->where('Publication.id_gr', $id_gr)
                                      ->findAll();
 
-
+        echo print_r($nom_utilisateur);
         if($publication){
             $data['publication']=$nom_utilisateur;
+            echo print_r($nom_utilisateur);
             
-            return redirect()->to(base_url('/groupepage/'.$id_gr));
+            return redirect()->to(site_url('/groupepage/'.$id_gr));
         }
         
     }

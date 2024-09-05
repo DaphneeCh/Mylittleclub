@@ -6,8 +6,20 @@ use App\Models\MembreGroupe;
 use \App\Validation\UserRules;
 use \App\Models\UtilisateurModel;
 
+/**
+ * Classe Utilisateur
+ * Contrôleur pour gérer les fonctionnalités utilisateur telles que l'inscription, la connexion, la déconnexion et la recherche.
+ * @author Thi Chau <pnhichau1701@gmail.com>, Zineb Fennich <penpalzineb@gmail.com>, Jordan Crisosto <Jordanalaicrisosto@gmail.com>
+ */
+
 class Utilisateur extends BaseController
 {
+    /**
+     * Gère le processus d'inscription des utilisateurs.
+     * Valide les entrées de l'utilisateur, enregistre les nouveaux utilisateurs et redirige après une inscription réussie.
+     * @return mixed Retourne une vue avec les données, un message de succès ou des erreurs basées sur la validation des entrées.
+     */
+
     public function inscrire()
     {
         $donnees=[];
@@ -22,7 +34,7 @@ class Utilisateur extends BaseController
                     ],
 
                 "email"=> [
-                        'rules'=> "required|valid_email|is_unique[utilisateur.email]",
+                        'rules'=> "required|valid_email|is_unique[Utilisateur.email]",
                         'errors'=>[
                             'required'=>"Veuillez saisir email",
                             'is_unique'=>"Email est existe. Veillez choisir un autre",],
@@ -37,7 +49,7 @@ class Utilisateur extends BaseController
                 "confirmerMdp"=> [
                     'rules'=>"required|matches[mdp]",
                     'errors'=>[
-                        'required'=>"Veuillez comfirmer mot de passe",
+                        'required'=>"Veuillez confirmer mot de passe",
                         'matches'=>"Le mot de passe ne correspond pas"]
                     ],
             ];
@@ -53,7 +65,7 @@ class Utilisateur extends BaseController
                 $utilisateur->save($n_donnees);
                 $session = session();
                 $session ->setFlashdata('success','Inscription avec Sucess');
-                return redirect()->to(base_url('/connexion'));
+                return redirect()->to(site_url('/connexion'));
             }
             
             else{//Affichage d'error
@@ -65,6 +77,12 @@ class Utilisateur extends BaseController
         
         return view("inscription",$donnees,$donnees);
     }
+        /**
+     * Gère la connexion des utilisateurs.
+     * Valide les identifiants des utilisateurs et configure la session de l'utilisateur si les identifiants sont valides, sinon retourne des erreurs.
+     *
+     * @return mixed Redirige vers Homepage si réussi ou affiche le formulaire de connexion avec des erreurs de validation.
+     */
     public function connecter()
     {
         $data=[];
@@ -78,11 +96,11 @@ class Utilisateur extends BaseController
             
             $errors = [
                 'mdp' =>[
-                    'required'=>'Veillez remplir le champs Mot de passe',
+                    'required'=>'Veuillez remplir le champs Mot de passe',
                     'validateUser'=> 'Email ou Mot de passe est incorrect',
                 ],
                 'email'=>[
-                    'required'=>'Veillez remplir le champs email'
+                    'required'=>'Veuillez remplir le champs email'
                 ]
             ];
             if(! $this->validate($rules,$errors)){
@@ -92,13 +110,19 @@ class Utilisateur extends BaseController
                 $utilisateur= $model->where('email',$this->request->getVar('email'))->first();
                 $this->setUserSession($utilisateur);
                 
-                return redirect()->to(base_url('/homepage'));
+                return redirect()->to(site_url('/homepage'));
             }
         }
         //echo view('template/header', $data);
         return view('connexion',$data,$data);
        // echo view('template/footer');
     }
+        /**
+     * Configure les données de session pour un utilisateur connecté.
+     *
+     * @param array $utilisateur Tableau contenant les données de l'utilisateur.
+     * @return bool Retourne vrai après avoir configuré les données de session avec succès.
+     */
     private function setUserSession($utilisateur){
         $data=[
             'id'=>$utilisateur['id'],
@@ -109,23 +133,61 @@ class Utilisateur extends BaseController
         session()->set($data);
         return true;
     }
+    /**
+     * Gère la recherche de groupes.
+     * Recherche les groupes correspondant au terme de recherche et renvoie les résultats.
+     *
+     * @return mixed Retourne une vue avec les données des groupes correspondant au terme de recherche.
+     */
 
     public function barreRecherche(){
-        $search=new GroupeModel();
-        $inputName=$this->request->getPost('inputName');
-        $id_gr=$search->select('id_gr')->where('nom_gr',$inputName)->first();
-        echo print_r($id_gr);
-        if($this->request->getMethod()=='post'){
-            if((!empty($inputName))&&isset($id_gr)){
-                //$name=$search->like(['nom_gr'.$inputName])->findAll();
-
-                return redirect()->to(base_url('/groupepage/'.$id_gr['id_gr']));
+        $searchTerm = $this->request->getPost('searchTerm');//Récupère le terme de recherche
+        
+        if (empty($searchTerm)) {//Si le terme de recherche est vide
+            $data['groups'] = [];
+            $data['users'] = [];
+        } else {
+            $groupModel = new GroupeModel();
+            $groupSearch= $groupModel->chercheGroupe($searchTerm);
+            $utilisateurModel = new UtilisateurModel();
+            $utilisateurSearch = $utilisateurModel->chercheUtilisateur($searchTerm);
+            //print_r($utilisateurSearch);
+            if(!$groupSearch){
+                $data['groups'] = [];
             }
-        }
-        else{
-            echo "Trouve pas";
-        }
+            else{
+                foreach ($groupSearch as $group) {
+                    $data['groups'][] = [
+                        'id_gr' => $group['id_gr'],
+                        'nom_gr' => $group['nom_gr']
+                    ];
+                }
+            }
+            if(!$utilisateurSearch){
+                $data['users'] = [];
+            }
+            else{
+                foreach ($utilisateurSearch as $utilisateur) {
+                    $data['users'][] = [
+                        'id' => $utilisateur['id'],
+                        'nom_user' => $utilisateur['nom_user']
+                    ];
+                }
+        
+            }
+            //print_r($data['groups']);
+            //print_r($data['users']);
+
+    
+        return view('search_results', $data);
     }
+}
+    /**
+     * Affiche Homepage.
+     * Affiche les groupes que l'utilisateur a rejoint et les groupes suggérés.
+     *
+     * @return mixed Retourne une vue avec les groupes que l'utilisateur a rejoint et les groupes suggérés.
+     */
 
     public function afficheHomePage(){
         $data=[];
@@ -148,14 +210,17 @@ class Utilisateur extends BaseController
             ->where("id_gr NOT IN ($subQuery)", NULL, FALSE) 
             ->findAll();
         $id_suggest = array();
-        foreach( array_rand($id_all, 10) as $idall ) {
-            $id_suggest[] = $id_all[$idall];
-            }
+        if(count($id_all) > 5){
+            foreach( array_rand($id_all, 5) as $idall ) {
+                $id_suggest[] = $id_all[$idall];
+                }
+        }else{
+            $id_suggest = [];
+        }
         //$all_gr=$gr->select('id_gr AS id_groupe, nom_gr')->findAll();
         //echo print_r($id_all);
         $id_max=$nb_gr['id_gr'];
         //Requête pour trouver tous les groupes que l'utilisateur a rejoint
-    
         $gr_rejoint = $gr_mem->select('Groupe.id_gr AS id_groupe, Groupe.nom_gr')
                      ->join('Groupe', 'membre.id_groupe = Groupe.id_gr')
                      ->where('membre.Demande_adhesion = 0')
@@ -165,22 +230,28 @@ class Utilisateur extends BaseController
 
 
 
-        if($log_in){
+        if($log_in){//Si l'utilisateur est connecté
             $data['liste_rejoint']=$gr_rejoint;
             $data['liste_suggest']=$id_suggest;
-            
+            return view('Home_page',$data);
 
         }
-        else{
+        else{//Si l'utilisateur n'est pas connecté
             echo 'IL FAUT CONNEXION';
             $data['liste_rejoint']=[];
             $data['liste_suggest']=[];
+            return view('Home_page',$data);
         }
-        return view('Home_page',$data);
 
     }
+    /**
+     * Déconnecte l'utilisateur.
+     * Détruit la session de l'utilisateur et redirige vers la page de connexion.
+     *
+     * @return mixed Redirige vers la page de connexion.
+     */
     public function logout(){
         session()->destroy();
-        return redirect()->to(base_url('/connexion'));
+        return redirect()->to(site_url('/connexion'));
     }
 }

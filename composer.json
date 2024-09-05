@@ -10,12 +10,13 @@
         "slack": "https://codeigniterchat.slack.com"
     },
     "require": {
-        "php": "^7.4 <8.0",
+        "php": "7.4.33",
         "codeigniter4/framework": "^4.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9",
         "mikey179/vfsstream": "^1.6",
+        "phpdocumentor/phpdocumentor": "^3.1",
         "phpunit/phpunit": "^9.1",
         "tatter/patches": "^2.1"
     },
@@ -32,7 +33,10 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "symfony/flex": true
+        }
     },
     "scripts": {
         "test": "phpunit"

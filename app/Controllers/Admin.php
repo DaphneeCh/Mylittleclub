@@ -4,9 +4,20 @@ use App\Models\MembreGroupe;
 use App\Models\GroupeModel;
 use App\Models\UtilisateurModel;
 
+/**
+ * Classe Admin
+ * Gère les fonctionnalités administratives comme l'approbation ou le rejet des demandes pour rejoindre des groupes.
+ * @author Thi Chau <pnhichau1701@gmail.com>
+ */
 class Admin extends BaseController{
 
-    //Fonction pour accepter à rejoindre un groupe
+    /**
+     * Approuve la demande d'un utilisateur pour rejoindre un groupe.
+     * Met à jour la base de données pour refléter l'approbation de l'utilisateur au groupe spécifié.
+     *
+     * @param int $id_gr Identifiant du groupe.
+     * @param int $id_user Identifiant de l'utilisateur.
+     */
     public function approveDemande($id_gr,$id_user){
         $membre=new MembreGroupe();
         $groupe_model = new GroupeModel();
@@ -20,7 +31,13 @@ class Admin extends BaseController{
 
     }
     
-    //Fonction pour rejeter ou supprimer 
+    /**
+     * Rejette ou supprime la demande d'un utilisateur pour rejoindre un groupe.
+     * Supprime l'enregistrement de la demande de l'utilisateur pour le groupe spécifié dans la base de données.
+     *
+     * @param int $id_gr Identifiant du groupe.
+     * @param int $id_user Identifiant de l'utilisateur.
+     */
     public function rejeterDemande($id_gr,$id_user){
         $membre=new MembreGroupe();
         $groupe_model = new GroupeModel();
@@ -33,6 +50,13 @@ class Admin extends BaseController{
         $membre->where('id_groupe',$id_gr)->where('id_user',$id_user)->delete();
 
     }
+    /**
+     * Affiche la page d'administration d'un groupe.
+     * Affiche les membres du groupe et les utilisateurs en attente d'approbation.
+     *
+     * @param int $id_gr Identifiant du groupe.
+     *@return mixed Retourne une vue de la page d'administration avec les données pertinentes du groupe.
+    */
     public function displayAdminPage($id_gr){
         $data = [];
         $groupe_model = new GroupeModel();
@@ -42,10 +66,11 @@ class Admin extends BaseController{
     
             return view('Admin_page',$data);
         }
-
-        $session=session();
+        //Vérifier si un utilisateur est connecté
         $id_user=session()->get('id');
+        //Requête pour trouver l'admin d'un groupe
         $query=$groupe_model->select('id_admin')->where('id_gr',$id_gr)->first();
+        //Requête pour trouver l'id du groupe
         $idG=$groupe_model->select('id_gr')->where('id_gr',$id_gr)->first();
         $data['group_id']=$idg=$idG['id_gr'];
         $id_admin=$query['id_admin'];
@@ -65,7 +90,7 @@ class Admin extends BaseController{
 
             return view('Admin_page',$data);
         }
-        
+        //Vérifier si un utilisateur a cliqué sur le bouton accepter ou refuser
         if($this->request->getMethod()== 'post'){ 
             if($this->request->getPost('decision')=='accept'){
                 $this->approveDemande($id_gr,$this->request->getPost('id_user'));
@@ -75,7 +100,7 @@ class Admin extends BaseController{
             }
         }
 
-        $user_model = new UtilisateurModel;
+        $user_model = new UtilisateurModel();
         //Requête pour trouver les membres d'un groupe
         $res = $user_model->select('id,nom_user')
                 ->join('membre','id=membre.id_user AND membre.Demande_adhesion=0 AND membre.id_groupe='.$id_gr)->findAll();
